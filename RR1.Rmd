@@ -1,0 +1,92 @@
+Reproducible Research
+========================================================
+
+This is an R Markdown document. 
+
+```{r}
+tbl <- read.csv("activity.csv")
+summary(tbl)
+
+
+
+##Aggregated data on datewise
+tbl2 <- na.omit(tbl)
+ tab_date_steps <- aggregate(steps ~ date, tbl2, sum)
+library(ggplot2)
+##ggplot(tab_date_steps, aes(x=date, y=steps)) + geom_bar(stat="identity")
+
+hist(tab_date_steps$steps, col=1, main="Histogram of total # of steps per day", 
+     xlab="Total number of steps in a day")
+
+#mean and median of steps
+tab_interval_steps <- aggregate(steps ~ interval, tbl2, mean)
+# get mean and median total number of steps per day
+mean(tab_interval_steps$steps)
+
+median(tab_interval_steps$steps)
+
+#plot it
+
+qplot(tab_interval_steps$interval, tab_interval_steps$steps, type='l', col=1, 
+     main="Average number of steps on Days", xlab="Interval", 
+     ylab="Average number of steps")
+
+##Aggreate the stpes in interval 
+max_row_id <- which.max(tab_interval_steps$steps)
+
+tab_interval_steps[max_row_id, ]
+
+##Imputing missing values
+tbl2_NA <- tbl2[!complete.cases(tbl),]
+nrow(tbl2_NA)
+
+for (i in 1:nrow(tbl2)){
+  if (is.na(tbl2$steps[i])){
+    interval_val <- tbl2$interval[i]
+    row_id <- which(tab_interval_steps$interval == interval_val)
+    steps_val <- tab_interval_steps$steps[row_id]
+    tbl2$steps[i] <- steps_val
+  }
+}
+
+# aggregate steps as per date to get total number of steps in a day
+tab_date_steps_imputed <- aggregate(steps ~ date, tbl2, sum)
+
+# create histogram of total number of steps in a day
+hist(tab_date_steps_imputed$steps, col=1, main="(Imputed) Histogram of total number of steps per day", xlab="Total number of steps in a day")
+
+
+#Mean Median of imputed table.
+mean(tab_date_steps_imputed$steps)
+median(tab_date_steps_imputed$steps)
+
+#diff in activity patterns between weekdays and weekends?
+
+
+
+# convert date from string to Date class
+tbl$date <- as.Date(tbl$date, "%Y-%m-%d")
+
+# add a new column indicating day of the week 
+tbl$day <- weekdays(tbl$date)
+
+# add a new column called day type and initialize to weekday
+tbl$day_type <- c("weekday")
+
+# If day is Saturday or Sunday, make day_type as weekend
+for (i in 1:nrow(tbl)){
+  if (tbl$day[i] == "Saturday" || tbl$day[i] == "Sunday"){
+    tbl$day_type[i] <- "weekend"
+  }
+}
+
+# convert day_time from character to factor
+tbl$day_type <- as.factor(tbl$day_type)
+
+# aggregate steps as interval to get average number of steps in an interval across all days
+table_interval_steps_imputed <- aggregate(steps ~ interval+day_type, tbl, mean)
+
+library(ggplot2)
+qplot(tbl2$interval, tbl2$steps, data=tab_date_steps_imputed, geom=c("line"), xlab="Interval", 
+      ylab="Number of steps", main="") 
+```
